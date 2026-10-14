@@ -15,3 +15,48 @@
 .form-block{border:1px solid #e0ebee;background:#f8fbfb;padding:18px;border-radius:14px;margin-bottom:18px}.form-block h3{margin:0 0 12px;font-size:1rem}.form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:end}.form-field{display:flex;flex-direction:column;gap:5px;min-width:0}.form-field label{font-size:.77rem;color:#506e7a;font-weight:700}.form-field input,.form-field select{background:white;color:#1b3949;border:1px solid #cbdce2;border-radius:9px;padding:9px 11px;min-width:0;width:100%}.form-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.btn{background:#0b827c;color:white;border:1px solid #0b827c;padding:9px 16px;border-radius:9px;font-size:.84rem;font-weight:700}.btn:hover{filter:brightness(.91)}.btn.secondary{background:white;color:#0f756f;border-color:#b2d8d1}.btn.danger{background:#fff5f5;color:#b14843;border-color:#f0c8c6}.btn.small{padding:5px 10px;font-size:.73rem}.btn:disabled{opacity:.5;cursor:not-allowed}.management{display:grid;gap:23px}.admin-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #e7eff0;font-size:.87rem}.admin-row:last-child{border-bottom:none}.admin-row-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}.admin-box{border:1px solid #e3edef;border-radius:14px;padding:17px}.admin-box h3{margin:0 0 9px}.helper{font-size:.79rem;color:#687f8c;margin:10px 0}.text-danger{color:#b94b45}.draw-panel{border:1px solid #efd8a4;background:#fffcf3;border-radius:13px;padding:16px;margin:12px 0}.draw-panel h4{margin:0 0 8px;color:#805f24}.draw-panel .form-grid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}.login-wrap{max-width:470px;margin:auto}.login-wrap .form-field{margin-bottom:11px}.admin-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:15px}footer{display:flex;flex-direction:column;gap:3px;padding:0 0 28px;color:#69828d;text-align:center;font-size:.76rem}footer strong{color:#4d6a78}.toast{position:fixed;z-index:5;right:18px;bottom:20px;max-width:min(380px,calc(100% - 36px));padding:12px 20px;background:#112e3e;color:white;border-radius:12px;box-shadow:0 12px 40px #10263355}.toast.hidden{display:none}
 @media(max-width:980px){.hero-art{opacity:.4}.stats{grid-template-columns:repeat(2,1fr)}.bracket{grid-template-columns:1fr}.form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section-select{align-items:start;gap:16px}}
 @media(max-width:600px){.shell{width:min(100% - 24px,1170px)}.topbar-inner{min-height:60px}.topbar-right{display:none}.hero{padding:25px 20px;border-radius:16px;margin-top:13px;min-height:0}.hero h1{font-size:1.72rem}.hero-art{right:-65px;opacity:.19}.hero-orb{right:55px;font-size:120px}.hero p{font-size:.82rem}.hero-chips span{font-size:.73rem;padding:5px 9px}.stats{gap:9px;margin-top:12px}.stat{padding:11px;gap:9px;border-radius:11px}.stat-icon{width:36px;height:36px;font-size:1rem;flex-shrink:0}.stat b{font-size:1.24rem}.stat small{font-size:.66rem}.section-select{margin:27px 0 14px}.category-chips{gap:7px}.category-chips button{font-size:.76rem;padding:7px 12px}.panel-heading{padding:18px 16px 15px}.panel-heading h2{font-size:1.16rem}.panel-heading p{font-size:.73rem}.category-tag{display:none}.tabs{padding:0 8px}.tabs button{padding:11px 12px;font-size:.77rem}.tab-content{padding:16px 13px 22px}.grid-two{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.match-body{gap:6px;padding:13px 10px}.team-name{font-size:.82rem}.set-score{font-size:1.22rem}.match-header{font-size:.72rem}.match-footer{font-size:.7rem}.standings{font-size:.77rem}}
+
+/* Mobile standings: allow a table to scroll inside its own panel, not the whole page. */
+@media (max-width: 700px) {
+  .tab-content,
+  .section-stack,
+  .section-stack > section {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .section-stack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .table-scroll {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #0b817d #e3edef;
+  }
+  .table-scroll::before {
+    content: "⇆ ปัดตารางซ้าย–ขวาเพื่อดูคะแนนด้านขวา";
+    position: sticky;
+    left: 0;
+    display: block;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: 100%;
+    padding: 7px 10px;
+    color: #087b75;
+    background: #ebf8f5;
+    font-size: .74rem;
+    font-weight: 700;
+    pointer-events: none;
+  }
+  .table-scroll .standings {
+    width: max-content;
+    min-width: 920px;
+  }
+}
