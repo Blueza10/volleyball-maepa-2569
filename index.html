@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c2439">
+  <meta name="description" content="เว็บไซต์รายงานผลการแข่งขันวอลเลย์บอลกลุ่มแม่ปะ–แม่กาษา 2569 ระหว่างวันที่ 16–18 พฤศจิกายน 2569">
+  <title>วอลเลย์บอลกลุ่มแม่ปะ–แม่กาษา 2569</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand"><span class="brand-ball" aria-hidden="true">🏐</span><span>แม่ปะ–แม่กาษา <strong>2569</strong></span></div>
+      <span class="topbar-right">ระบบรายงานผลการแข่งขัน</span>
+    </div>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-text"><span class="eyebrow"><span class="live-dot"></span> ศึกวอลเลย์บอลนักเรียน • ประจำปี 2569</span>
+        <h1>วอลเลย์บอลกลุ่ม<br><em>แม่ปะ–แม่กาษา 2569</em></h1>
+        <p>ติดตามตารางแข่ง ผลรายเซต คะแนนสะสม และเส้นทางสู่รอบชิงชนะเลิศในที่เดียว</p>
+        <div class="hero-chips"><span>📅 16–18 พ.ย. 2569</span><span>📍 โรงเรียนบ้านน้ำดิบ</span><span>🏆 6 รุ่นแข่งขัน</span></div>
+      </div>
+      <div class="hero-art" aria-hidden="true"><div class="court-line court-one"></div><div class="court-line court-two"></div><div class="hero-orb">🏐</div><span class="art-text">GAME<br>ON.</span></div>
+    </section>
+    <div id="notice" aria-live="polite"></div>
+    <section class="stats" id="stats" aria-label="สถิติภาพรวม"></section>
+    <section class="section-select"><div><div class="section-kicker">เลือกประเภทการแข่งขัน</div><h2>รุ่นการแข่งขัน</h2></div><div id="category-chips" class="category-chips" aria-label="เลือกรุ่นการแข่งขัน"></div></section>
+    <section class="content-panel">
+      <div class="panel-heading"><div><span class="section-kicker">MATCH CENTER</span><h2 id="category-title">ผลการแข่งขัน</h2><p id="category-description" class="muted"></p></div><div id="category-tag" class="category-tag"></div></div>
+      <nav id="tabs" class="tabs" aria-label="เมนูหลัก"></nav>
+      <div id="tab-content" class="tab-content" aria-live="polite"></div>
+    </section>
+    <footer><strong>การแข่งขันวอลเลย์บอลกลุ่มแม่ปะ–แม่กาษา 2569</strong><span>เว็บไซต์รายงานผลสำหรับผู้ชมและคณะผู้จัดการแข่งขัน • ผลที่ยังไม่ยืนยันไม่ถูกนำไปคิดคะแนนสะสม</span></footer>
+  </main>
+  <div id="toast" role="status" aria-live="polite" class="toast hidden"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
