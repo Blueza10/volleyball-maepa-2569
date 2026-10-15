@@ -25,6 +25,38 @@ const noData = (a, b) => `<div class="empty"><strong>${e(a)}</strong>${e(b)}</di
 const stat = (icon, value, label) => `<div class="stat"><span class="stat-icon">${icon}</span><div><b>${value}</b><small>${e(label)}</small></div></div>`;
 const statusTag = m => m.status === 'final' ? '<span class="pill done">✓ ยืนยันแล้ว</span>' :
   m.status === 'live' ? '<span class="pill live">● กำลังบันทึก</span>' : '<span class="pill scheduled">รอแข่งขัน</span>';
+// Official knockout appointments approved by the organizer. These display even
+// before the teams qualify; only actual matches are stored in Firestore.
+const KNOCKOUT_PLAN = {
+  u15m: {
+    third: ['2026-11-16T13:45', 'สนาม 2'], final: ['2026-11-16T14:30', 'สนาม 2']
+  },
+  u12f: {
+    semi1: ['2026-11-18T08:30', 'สนาม 1'], semi2: ['2026-11-18T09:15', 'สนาม 1'],
+    third: ['2026-11-18T11:30', 'สนาม 1'], final: ['2026-11-18T13:00', 'สนาม 1']
+  },
+  u15f: {
+    semi1: ['2026-11-18T10:00', 'สนาม 1'], semi2: ['2026-11-18T10:45', 'สนาม 1'],
+    third: ['2026-11-18T13:45', 'สนาม 1'], final: ['2026-11-18T14:30', 'สนาม 1']
+  }
+};
+const KO_LABELS = {
+  semi1: ['อันดับ 1 สาย A', 'อันดับ 2 สาย B'],
+  semi2: ['อันดับ 1 สาย B', 'อันดับ 2 สาย A'],
+  final: ['ผู้ชนะรองฯ คู่ที่ 1', 'ผู้ชนะรองฯ คู่ที่ 2'],
+  third: ['ผู้แพ้รองฯ คู่ที่ 1', 'ผู้แพ้รองฯ คู่ที่ 2']
+};
+function reservedKnockouts(category) {
+  const config = getCategory(category);
+  return Object.entries(KNOCKOUT_PLAN[category] || {})
+    .filter(([round]) => !state.matches.some(m => m.category === category && m.round === round))
+    .map(([round, [scheduledAt, court]]) => {
+      const labels = config?.format === 'direct' && round === 'final' ? ['อันดับ 1 สาย A', 'อันดับ 1 สาย B'] :
+        config?.format === 'direct' && round === 'third' ? ['อันดับ 2 สาย A', 'อันดับ 2 สาย B'] : KO_LABELS[round];
+      return { id: `reserved-${category}-${round}`, category, round, group: '-', scheduledAt, court,
+        homeLabel: labels[0], awayLabel: labels[1], reserved: true, scores: [], status: 'scheduled' };
+    });
+}
 function dateText(stamp) {
   if (!stamp) return 'ยังไม่กำหนดเวลา';
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(stamp);
@@ -38,6 +70,9 @@ function orderMatches(matches) {
 }
 const matchLabel = m => `${ROUND_LABELS[m.round] || m.round}${m.group && m.group !== '-' ? ' • สาย ' + m.group : ''}`;
 function matchCard(m, edit = false) {
+  if (m.reserved) return `<article class="match-card"><div class="match-header"><span>${e(matchLabel(m))}</span><span class="pill scheduled">รอผลเพื่อระบุทีม</span></div>
+    <div class="match-body"><div class="team-name">${e(m.homeLabel)}</div><div class="set-score unplayed">VS</div><div class="team-name right">${e(m.awayLabel)}</div></div>
+    <div class="match-footer"><span>${e(dateText(m.scheduledAt))} • ${e(m.court)}</span><span>กำหนดเวลาไว้แล้ว • ระบบจะเติมชื่อทีมอัตโนมัติ</span></div></article>`;
   const s = validateScores(m.scores || []);
   const score = (m.scores?.length && s.ok) ? `${s.homeSets}<span class="colon">:</span>${s.awaySets}` : 'VS';
   const setStr = m.scores?.length ? m.scores.map((p, i) => `<span class="score-chip">S${i + 1}: ${p.home}–${p.away}</span>`).join(' ') : 'ยังไม่มีผลรายเซต';
@@ -63,12 +98,12 @@ function renderStandings() {
   return `<div class="section-stack">${sections.join('')}</div>`;
 }
 function renderSchedule() {
-  const m = orderMatches(inCat(state.matches)).filter(x => state.filter === 'all' || x.scheduledAt?.slice(8, 10) === state.filter);
+  const m = orderMatches([...inCat(state.matches), ...reservedKnockouts(state.category)]).filter(x => state.filter === 'all' || x.scheduledAt?.slice(8, 10) === state.filter);
   const filters = [['all', 'ทั้งหมด'], ['16', '16 พ.ย.'], ['17', '17 พ.ย.'], ['18', '18 พ.ย.']];
   return `<div class="split-heading"><h3 class="subheading">โปรแกรมและผลการแข่งขัน</h3><div class="filters">${filters.map(([key, label]) => `<button data-action="filter" data-id="${key}" class="${state.filter === key ? 'active' : ''}">${label}</button>`).join('')}</div></div>
   ${m.length ? `<div class="match-list">${m.map(x => matchCard(x)).join('')}</div>` : noData('ไม่พบรายการแข่งขันในช่วงนี้', 'ผู้จัดสามารถกำหนดโปรแกรมและเวลาแข่งขันในเมนูผู้ดูแล')}`;
 }
-function bracketSlot(round, ms, alt) { const m = ms.find(m => m.round === round); return m ? matchCard(m) : `<div class="placeholder">${e(alt)}</div>`; }
+function bracketSlot(round, ms, alt) { const m = ms.find(m => m.round === round) || reservedKnockouts(state.category).find(m => m.round === round); return m ? matchCard(m) : `<div class="placeholder">${e(alt)}</div>`; }
 function renderBracket() {
   const config = getCategory(state.category), ms = inCat(state.matches).filter(isKO);
   if (config.format === 'league') return `<h3 class="subheading">จัดอันดับด้วยคะแนนสะสม</h3>${msg('รุ่นนี้แข่งขันพบกันหมด จัดอันดับที่ 1–3 จากตารางคะแนน ไม่มีรอบน็อกเอาต์')}${renderStandings()}`;
@@ -77,7 +112,7 @@ function renderBracket() {
   <section class="bracket-col"><h3>รอบชิงอันดับ 3</h3>${bracketSlot('third', ms, 'ผู้แพ้รอบรองชนะเลิศทั้ง 2 คู่')}</section>
   <section class="bracket-col"><h3>รอบชิงชนะเลิศ</h3>${bracketSlot('final', ms, 'ผู้ชนะรอบรองชนะเลิศทั้ง 2 คู่')}</section></div>` :
   `<div class="grid-two"><section><h3 class="subheading">ชิงชนะเลิศ</h3>${bracketSlot('final', ms, 'อันดับ 1 สาย A พบอันดับ 1 สาย B')}</section><section><h3 class="subheading">ชิงอันดับ 3</h3>${bracketSlot('third', ms, 'อันดับ 2 สาย A พบอันดับ 2 สาย B')}</section></div>`}
-  <p class="table-note">คู่รอบน็อกเอาต์สร้างโดยผู้จัดเมื่อยืนยันผลรอบแบ่งสายครบและไม่มีอันดับค้างจับสลาก • ไม่เปลี่ยนคู่ย้อนหลังอัตโนมัติเมื่อแก้ผลรอบก่อนหน้า</p>`;
+  <p class="table-note">เวลารอบสุดท้ายกำหนดไว้ล่วงหน้า • เมื่อผู้ดูแลยืนยันผลครบ ระบบเติมชื่อทีมเข้ารอบอัตโนมัติ (หากอันดับเสมอทุกเกณฑ์ต้องบันทึกผลจับสลากก่อน) • เมื่อมีคู่รอบถัดไปแล้วจะไม่แก้ผลรอบก่อนหน้าโดยอัตโนมัติ</p>`;
 }
 function renderOverview() {
   const c = getCategory(state.category), teams = inCat(state.teams), matches = inCat(state.matches);
@@ -141,7 +176,7 @@ function adminView() {
   return `<div class="admin-heading"><div><span class="pill done">ผู้ดูแลได้รับสิทธิ์แล้ว</span> <span class="muted">${e(state.user.email)}</span></div><div class="form-actions" style="margin-top:0"><button class="btn secondary small" data-action="backup">↓ สำรอง JSON</button><button class="btn secondary small" data-action="logout">ออกจากระบบ</button></div></div>
     <div class="management">${teamForm()}${manualMatchForm()}
     <section class="admin-box"><div class="split-heading"><h3>ผลการแข่งขันและเวลาของคู่ที่สร้างแล้ว (${allMatches.length})</h3></div>${editor()}${allMatches.length ? `<div class="match-list">${allMatches.map(m => matchCard(m, true)).join('')}</div>` : noData('ยังไม่มีคู่แข่งขัน', 'เพิ่มทีมก่อน แล้วกดสร้างคู่พบกันหมด')}</section>
-    ${cfg.format !== 'league' ? `<section class="form-block"><h3>รอบน็อกเอาต์</h3><p class="helper">ระบบจะสร้างรองชนะเลิศหลังจบรอบแบ่งสาย (สำหรับรุ่นหญิง 12/15 ปี) และสร้างรอบชิงหลังยืนยันผลรองฯ • รุ่นชาย 15 ปีสร้างคู่ชิงได้ทันทีหลังจบการแข่งขันในสาย</p><div class="form-actions"><button class="btn" data-action="playoffs">+ สร้างรอบน็อกเอาต์ขั้นถัดไป</button><button class="btn danger" data-action="clear-playoffs">ลบรอบน็อกเอาต์ทั้งหมด</button></div></section>` : ''}
+    ${cfg.format !== 'league' ? `<section class="form-block"><h3>รอบน็อกเอาต์</h3><p class="helper">ระบบเติมทีมและสร้างคู่ถัดไปให้อัตโนมัติเมื่อผู้ดูแลยืนยันผลครบทุกคู่ในรอบนั้น และบันทึกวัน เวลา สนามตามตารางที่กำหนดไว้แล้ว • หากยังไม่ขึ้น ให้กดตรวจสอบรอบถัดไป</p><div class="form-actions"><button class="btn" data-action="playoffs">↻ ตรวจสอบ / เติมคู่รอบถัดไป</button><button class="btn danger" data-action="clear-playoffs">ลบรอบน็อกเอาต์ทั้งหมด</button></div></section>` : ''}
     <section><h3 class="subheading">การจับสลากกรณีเสมอทุกเกณฑ์</h3>${drawForms() || '<p class="helper">ไม่มีอันดับที่ต้องตัดสินด้วยการจับสลากในขณะนี้</p>'}</section></div>`;
 }
 function render() {
@@ -178,6 +213,34 @@ async function createDocs(collectionName, objects) {
   const batch = writeBatch(state.db);
   for (const obj of objects) batch.set(doc(collection(state.db, collectionName)), obj);
   await batch.commit();
+}
+// Triggered by a confirmed result (admin side), or by the optional repair button.
+// Re-read Firestore after the confirmed save, rather than relying on onSnapshot
+// having delivered the latest result before this function runs.
+async function syncNextKnockouts(category) {
+  const f = firebaseFns();
+  const [teamsSnapshot, matchesSnapshot, drawsSnapshot] = await Promise.all(
+    ['teams', 'matches', 'draws'].map(collectionName =>
+      f.getDocsFromServer(f.collection(state.db, collectionName))));
+  const decode = snap => snap.docs.map(docSnapshot => ({ id: docSnapshot.id, ...docSnapshot.data() }));
+  const teams = decode(teamsSnapshot), matches = decode(matchesSnapshot), draws = decode(drawsSnapshot);
+  const result = buildNextKnockouts(category, teams, matches, draws);
+  if (result.error) return { created: 0, reason: result.error };
+  const plan = KNOCKOUT_PLAN[category] || {};
+  const docs = result.matches.map(match => {
+    const slot = plan[match.round];
+    if (!slot) throw new Error('ยังไม่ได้กำหนดวันเวลา/สนามของรอบ ' + match.round);
+    return { ...match, scheduledAt: slot[0], court: slot[1] };
+  });
+  // Stable IDs avoid duplicates if two admins confirm the last results together.
+  const references = docs.map(match => f.doc(state.db, 'matches', `automatic_${category}_${match.round}`));
+  const created = await f.runTransaction(state.db, async transaction => {
+    const existing = await Promise.all(references.map(reference => transaction.get(reference)));
+    if (existing.some(snapshot => snapshot.exists())) return 0;
+    for (let i = 0; i < docs.length; i++) transaction.set(references[i], docs[i]);
+    return docs.length;
+  });
+  return { created, reason: created ? '' : 'มีคู่แข่งขันเหล่านี้อยู่แล้ว' };
 }
 async function handleAction(target) {
   const action = target.dataset.action, id = target.dataset.id;
@@ -221,10 +284,8 @@ async function handleAction(target) {
     await createDocs('matches', create); toast(`สร้าง ${create.length} คู่แล้ว`);
   }
   if (action === 'playoffs') {
-    const r = buildNextKnockouts(state.category, state.teams, state.matches, state.draws);
-    if (r.error) throw new Error(r.error);
-    if (!confirm(`สร้างคู่รอบน็อกเอาต์ ${r.matches.length} คู่ โดยอิงจากอันดับที่ยืนยันแล้ว?`)) return;
-    await createDocs('matches', r.matches); toast('สร้างคู่รอบน็อกเอาต์แล้ว กรุณากำหนดเวลาแข่ง');
+    const result = await syncNextKnockouts(state.category);
+    toast(result.created ? `เพิ่มคู่รอบถัดไป ${result.created} คู่พร้อมเวลาที่กำหนดแล้ว` : result.reason);
   }
   if (action === 'clear-playoffs') {
     const ms = inCat(state.matches).filter(isKO);
@@ -289,7 +350,18 @@ async function handleForm(form, submitter) {
     if (court.length > 60) throw new Error('ชื่อสนามยาวเกินไป');
     if (m.status === 'final' && !final && !confirm('คู่นี้ยืนยันแล้ว การบันทึกแบบร่างจะนำผลออกจากตารางคะแนนสะสมจนกว่าจะยืนยันใหม่ ยืนยันหรือไม่?')) return;
     await f.updateDoc(f.doc(state.db, 'matches', id), { scores, status: final ? 'final' : (scores.length ? 'live' : 'scheduled'), scheduledAt, court });
-    state.editMatch = null; toast(final ? 'ยืนยันผลและอัปเดตตารางคะแนนแล้ว' : 'บันทึกผลรายเซต/เวลาแล้ว');
+    state.editMatch = null;
+    if (!final || !['group', 'semi1', 'semi2'].includes(m.round)) {
+      toast(final ? 'ยืนยันผลและอัปเดตตารางคะแนนแล้ว' : 'บันทึกผลรายเซต/เวลาแล้ว');
+    } else {
+      try {
+        const result = await syncNextKnockouts(m.category);
+        toast(result.created ? `ยืนยันผลแล้ว • ระบบสร้างคู่รอบถัดไป ${result.created} คู่อัตโนมัติ` : 'ยืนยันผลและอัปเดตตารางคะแนนแล้ว');
+      } catch (error) {
+        console.error('Auto knockout failed after confirmed result:', error);
+        toast('ยืนยันผลแล้ว แต่ยังสร้างคู่รอบถัดไปไม่ได้: ' + errText(error));
+      }
+    }
   }
   if (form.classList.contains('draw-form')) {
     const group = form.dataset.group, ids = form.dataset.ids.split('|');
@@ -300,7 +372,13 @@ async function handleForm(form, submitter) {
     const others = (current?.orders || []).filter(o => [...o.ids].sort().join('|') !== key);
     await f.setDoc(f.doc(state.db, 'draws', `${state.category}_${group}`), { category: state.category, group,
       orders: [...others, { ids, order: values }], note: 'ยืนยันลำดับโดยผลการจับสลากจริงจากคณะผู้จัดการแข่งขัน' });
-    toast('บันทึกผลจับสลากแล้ว');
+    try {
+      const result = await syncNextKnockouts(state.category);
+      toast(result.created ? `บันทึกผลจับสลากแล้ว • เพิ่มรอบถัดไป ${result.created} คู่` : 'บันทึกผลจับสลากแล้ว');
+    } catch (error) {
+      console.error('Auto knockout failed after draw:', error);
+      toast('บันทึกผลจับสลากแล้ว แต่ยังสร้างคู่รอบถัดไปไม่ได้: ' + errText(error));
+    }
   }
 }
 
